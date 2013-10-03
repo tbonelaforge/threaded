@@ -14,6 +14,7 @@ struct threaded_binary_node * new_threaded_binary_node() {
     result->right_link = NULL;
     result->threaded = 'n';
     result->data = NULL;
+    result->height = 0;
     return result;
 }
 
@@ -52,13 +53,17 @@ struct threaded_binary_node * insert_right_leaf( struct threaded_binary_node * n
     return child;
 }
 
-char * print_threaded_tree( struct threaded_binary_node * self ) {
+char * print_threaded_tree( struct threaded_binary_node * self, ptr2dataprinter data_printer ) {
     char * left_string = "";
+    int left_string_was_allocated = 0;
     char * right_string = "";
+    int right_string_was_allocated = 0;
+    char * data_string = "";
+    int data_string_was_allocated = 0;
     char * template = 
         "<table border='1'>"
             "<tr align='center'>"
-                "<td colspan='2'>address : %p<br />value : %c<br />left_link: %p<br />right_link : %p<br />threaded : %c<br />priority : %d</td>"
+                "<td colspan='2'>address : %p<br />data : %s<br />left_link: %p<br />right_link : %p<br />threaded : %c<br />height : %d</td>"
             "</tr>"
             "<tr align='center'>"
                 "<td>%s</td>"
@@ -71,19 +76,44 @@ char * print_threaded_tree( struct threaded_binary_node * self ) {
     struct threaded_binary_node * child;
 
     if ( child = get_threaded_left_child( self ) ) {
-        left_string = print_threaded_tree( child );
+        left_string = print_threaded_tree( child, data_printer );
+        left_string_was_allocated = 1;
     }
     if ( child = get_threaded_right_child( self ) ) {
         if ( child != self ) {
-            right_string = print_threaded_tree( child );
+            right_string = print_threaded_tree( child, data_printer );
+            right_string_was_allocated = 1;
         }
-    }
-    
-    result_string_length = template_length + strlen( left_string ) + strlen( right_string ) + 32;
+    } 
+    data_string = (*data_printer)( self->data );
+    data_string_was_allocated = 1;
+    result_string_length = template_length 
+        + strlen( left_string )
+        + strlen( right_string ) 
+        + strlen( data_string ) 
+        + 75; // The 75 is for all the memory addresses.
+
     result_string = malloc( ( result_string_length + 1 ) * sizeof( char ) );
     *result_string = '\0';
-    struct treap_data * data = self->data;
-    sprintf( result_string, template, self, ( data ) ? data->value : ' ', self->left_link, self->right_link, self->threaded, ( data ) ? data->priority : 0, left_string, right_string );
+    sprintf( result_string, template, 
+             self, 
+             data_string, 
+             self->left_link, 
+             self->right_link, 
+             self->threaded, 
+             self->height, 
+             left_string,
+             right_string
+    );
+   if ( left_string_was_allocated ) {
+       free( left_string );
+   }
+   if ( right_string_was_allocated ) {
+       free( right_string );
+   }
+   if ( data_string_was_allocated ) {
+       free( data_string );
+   }
     return result_string;
     
 }
@@ -98,6 +128,9 @@ struct threaded_binary_node * get_threaded_left_child( struct threaded_binary_no
 }
 
 struct threaded_binary_node * get_threaded_right_child( struct threaded_binary_node * self ) {
+    if ( is_threaded_head( self ) ) {
+        return NULL;
+    }
     if ( self->threaded == 'r' || self->threaded == 'b' ) {
         return NULL;
     }
@@ -107,6 +140,10 @@ struct threaded_binary_node * get_threaded_right_child( struct threaded_binary_n
 struct threaded_binary_node * get_threaded_parent( struct threaded_binary_node * self ) {
     struct threaded_binary_node * leaf;
     struct threaded_binary_node * parent;
+
+    if ( is_threaded_head(self) ) {
+        return NULL;
+    }
 
     // First guess that self is a right child.
     leaf = get_leftmost_threaded_descendent( self );
@@ -260,4 +297,101 @@ void remove_left_threaded_status( struct threaded_binary_node * p ) {
         p->threaded = 'n';
     }
     return;
+}
+
+void rotate_left( struct threaded_binary_node * pivot ) {
+    struct threaded_binary_node * child = get_threaded_right_child( pivot );
+    struct threaded_binary_node * parent = get_threaded_parent( pivot );
+    if ( has_left_thread( child ) ) {
+        pivot->right_link = child;
+        add_right_threaded_status( pivot );
+        remove_left_threaded_status( child );
+    } else {
+        pivot->right_link = child->left_link;
+    }
+    child->left_link = pivot;
+    replace_child( pivot, parent, child );
+}
+
+void rotate_right( struct threaded_binary_node * pivot ) {
+    struct threaded_binary_node * child = get_threaded_left_child( pivot );
+    struct threaded_binary_node * parent = get_threaded_parent( pivot );
+    if ( has_right_thread( child ) ) {
+        pivot->left_link = child;
+        add_left_threaded_status( pivot );
+        remove_right_threaded_status( child );
+    } else {
+        pivot->left_link = child->right_link;
+    }
+    child->right_link = pivot;
+    replace_child( pivot, parent, child );
+}
+
+struct threaded_binary_node * threaded_search( struct threaded_binary_node * p, void * target, ptr2comparator comparator ) {
+    struct threaded_binary_node * previous = NULL;
+    int comparison = -1;
+
+    while ( p ) {
+        previous = p;
+        if ( !p->data ) {
+            p = get_threaded_left_child( p );
+            continue;
+        }
+        comparison = (*comparator)( target, p->data );
+        if ( comparison == 0 ) {
+            break;
+        }
+        if ( comparison == -1 ) {
+            p = get_threaded_left_child( p );
+        } else {
+            p = get_threaded_right_child( p );
+        }
+    }
+    return previous;
+}
+
+struct threaded_binary_node * threaded_insert( struct threaded_binary_node * root, void * value, ptr2comparator comparator ) {
+    struct threaded_binary_node * new_node = NULL;
+    int comparison = -1;
+    struct threaded_binary_node * t = threaded_search( root, value, comparator );
+    if ( t->data ) {
+        comparison = (*comparator)( value, t->data );
+    }
+    if ( comparison == 0 ) { // Already exists.
+        return t;
+    }
+    new_node = new_threaded_binary_node();
+    new_node->data = value;
+    if ( comparison == -1 ) { // Less than t's value.
+        t = insert_left_leaf( t, new_node );
+    } else { // Greater than t's value.
+        t = insert_right_leaf( t, new_node );
+    }
+    calculate_threaded_height( t );
+    return t;
+}
+
+int max_height( int left_height, int right_height ) {
+    return ( left_height > right_height ) ? left_height : right_height;
+}
+
+
+
+void calculate_threaded_height( struct threaded_binary_node * self ) {
+    struct threaded_binary_node * left_child = get_threaded_left_child( self );
+    struct threaded_binary_node * right_child = get_threaded_right_child( self );
+    struct threaded_binary_node * parent = NULL;
+    int left_child_height = ( left_child ) ? left_child->height : 0;
+    int right_child_height = ( right_child ) ? right_child->height : 0;
+    self->height = 1 + max_height( left_child_height, right_child_height );
+    if ( parent = get_threaded_parent( self ) ) {
+        calculate_threaded_height( parent );
+    }
+}
+
+int is_threaded_head( struct threaded_binary_node * node ) {
+    if ( !node->data ) {
+        return 1;
+    }
+    return 0;
 }
