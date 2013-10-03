@@ -3,7 +3,6 @@
 #include <string.h>
 
 #include "threaded_binary_node.h";
-#include "treap.h";
 
 struct threaded_binary_node * new_threaded_binary_node() {
     struct threaded_binary_node * result = malloc( sizeof( struct threaded_binary_node ) );
@@ -54,9 +53,9 @@ struct threaded_binary_node * insert_right_leaf( struct threaded_binary_node * n
 }
 
 char * print_threaded_tree( struct threaded_binary_node * self, ptr2dataprinter data_printer ) {
-    char * left_string = "";
+    char * left_string = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
     int left_string_was_allocated = 0;
-    char * right_string = "";
+    char * right_string = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
     int right_string_was_allocated = 0;
     char * data_string = "";
     int data_string_was_allocated = 0;
