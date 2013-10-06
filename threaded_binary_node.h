@@ -52,6 +52,7 @@ void delete_leaf( struct threaded_binary_node * );
 struct threaded_binary_node * get_threaded_parent( struct threaded_binary_node * );
 struct threaded_binary_node * get_threaded_left_child( struct threaded_binary_node * );
 struct threaded_binary_node * get_threaded_right_child( struct threaded_binary_node * );
+struct threaded_binary_node * get_threaded_child( struct threaded_binary_node *, int );
 int is_threaded_left_child( struct threaded_binary_node * );
 int is_threaded_right_child( struct threaded_binary_node * );
 struct threaded_binary_node * get_leftmost_threaded_descendent( struct threaded_binary_node * );
@@ -69,10 +70,16 @@ void remove_left_threaded_status( struct threaded_binary_node * );
 void replace_child( struct threaded_binary_node *, struct threaded_binary_node *, struct threaded_binary_node * );
 void rotate_left( struct threaded_binary_node * );
 void rotate_right( struct threaded_binary_node * );
+void rotate( struct threaded_binary_node *, int );
 struct threaded_binary_node * threaded_search( struct threaded_binary_node *, void *, ptr2comparator );
 struct threaded_binary_node * threaded_insert( struct threaded_binary_node *, void *, ptr2comparator );
 void calculate_threaded_height( struct threaded_binary_node * );
 int is_threaded_head( struct threaded_binary_node * );
-
+void balance( struct threaded_binary_node * );
+int is_balanced( struct threaded_binary_node * );
+int get_threaded_child_height( struct threaded_binary_node *, int );
+int get_threaded_height( struct threaded_binary_node * );
+int get_heavy_child_index( struct threaded_binary_node * );
+struct threaded_binary_node * insert( struct threaded_binary_node * , void *, ptr2comparator );
 
 #endif

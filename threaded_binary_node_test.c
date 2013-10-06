@@ -27,11 +27,20 @@ void testprint( struct threaded_binary_node * );
 
 /*============================================================
 
-Wrapper around insert function for this test.
+Wrapper around threaded insert function for this test.
 
 ============================================================*/
 
 struct threaded_binary_node * testinsert( struct threaded_binary_node *, int );
+
+
+/*============================================================
+
+Wrapper around balanced insert function for this test.
+
+============================================================*/
+
+struct threaded_binary_node * testbalancedinsert( struct threaded_binary_node *, int );
 
 /*============================================================
 
@@ -49,6 +58,13 @@ Testing routine for inserts
 struct threaded_binary_node * test_three_inserts( int, int, int );
 
 
+void print_header( char * info ) {
+    printf( "<hr />\n" );
+    printf( "============================================================<br />\n" );
+    printf( "%s<br />\n", info );
+    printf( "============================================================<br />\n" );
+}
+
 
 /*============================================================
 
@@ -58,11 +74,15 @@ Main testing routine.
 
 void test_basic_threading_functions();
 void test_inserts_and_rotations();
+void test_balancing();
+void test_balancing_inserts();
 
 int main() {
 
     test_basic_threading_functions();
     test_inserts_and_rotations();
+    test_balancing();
+    test_balancing_inserts();
 
 }
 
@@ -185,6 +205,99 @@ void test_inserts_and_rotations() {
     testprint( post_insert );
 }
 
+void test_balancing() {
+    printf( "<hr />\n" );
+    printf( "============================================================<br />\n" );
+    printf( "Testing balancing inserts, and rotation functions<br />\n" );
+    printf( "============================================================<br />\n" );
+
+    struct threaded_binary_node * head = new_threaded_binary_head();
+    struct threaded_binary_node * target = NULL;
+
+    testinsert( head, 42 );
+    target = testinsert( head, 43 );
+    testinsert( head, 44 );
+    
+    printf( "before balancing, the tree looks like:\n" );
+    testprint( head );
+
+    printf( "About to balance (from the result of inserting 43:<br />\n" );
+    balance( target );
+    printf( "The balancing is done.<br />\n" );
+    printf( "After balancing, the head looks like:<br />\n" );
+    testprint( head );
+    printf( "============================================================<br />\n" );
+
+    printf( "before balancing, the tree looks like: \n" );
+    head = new_threaded_binary_head(); // Throw away memory!
+    target = testinsert( head, 42 );
+    testinsert( head, 43 );
+    testinsert( head, 44 );
+    testprint( head );
+
+    printf( "About to balance (from the result of inserting 42):<br />\n" );
+    balance( target );
+    printf( "The balancing is done, now the head looks like:<br />\n" );
+    testprint( head );
+    printf( "============================================================<br />\n" );
+
+    printf( "before balancing, the tree looks like: <br />\n" );
+    head = new_threaded_binary_head(); // Throw away some more memory!
+    target = testinsert( head, 40 );
+    testinsert( head, 30 );
+    testinsert( head, 50 );
+
+    testinsert( head, 55 );
+    testinsert( head, 45 );
+    target = testinsert( head, 42 );
+    testprint( head );
+
+    printf( "About to balance ( from the result of inserting 42):<br />\n" );
+    balance( target );
+    printf( "The balancing is done, now the head looks like:<br />\n" );
+    testprint( head );
+    printf( "============================================================<br />\n" );
+
+    printf( "before balancing, the tree looks like: <br />\n" );
+    head = new_threaded_binary_head(); // Throw away some more memory!
+    target = testinsert( head, 40 );
+    testinsert( head, 30 );
+    testinsert( head, 50 );
+
+    testinsert( head, 55 );
+    testinsert( head, 45 );
+    target = testinsert( head, 47 );
+    testprint( head );
+
+    printf( "About to balance ( from the result of inserting 47):<br />\n" );
+    balance( target );
+    printf( "The balancing is done, now the head looks like:<br />\n" );
+    testprint( head );
+    printf( "============================================================<br />\n" );
+    
+    
+    
+}
+
+void test_balancing_inserts() {
+    struct threaded_binary_node * head;
+    print_header( "Testing balancing after inserts" );
+    printf( "After inserting 42, 43, 44, 45, 46, 47, and 48, the tree looks like:<br />\n" );
+    head = new_threaded_binary_head();
+    testbalancedinsert( head, 42 );
+    testbalancedinsert( head, 43 );
+    testbalancedinsert( head, 44 );
+    testbalancedinsert( head, 45 );
+    testbalancedinsert( head, 46 );
+    testbalancedinsert( head, 47 );
+    testbalancedinsert( head, 48 );
+    testprint( head );
+    
+    
+}
+
+
+
 char * print_data_as_integer( void * value ) {
     long int printable = (long int) value; // Perform the cast.
     int howmanydigits = 1;
@@ -236,7 +349,11 @@ void testprint( struct threaded_binary_node * node ) {
 }
 
 struct threaded_binary_node * testinsert( struct threaded_binary_node * head, int value ) {
-    threaded_insert( head, (void *) (long int) value, &compare_data_as_integers );
+    return threaded_insert( head, (void *) (long int) value, &compare_data_as_integers );
+}
+
+struct threaded_binary_node * testbalancedinsert( struct threaded_binary_node * head, int value ) {
+    return insert( head, (void *) (long int) value, &compare_data_as_integers );
 }
 
 struct threaded_binary_node * testsearch( struct threaded_binary_node * root, int target ) {
